@@ -17,7 +17,6 @@
         .gradient-bg { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
-        
         .loc-pill { transition: all 0.2s; white-space: nowrap; }
     </style>
 </head>
@@ -29,13 +28,14 @@
         <p class="opacity-90 text-sm mt-3 font-medium">在永豐餘找到最適合你的職缺</p>
     </div>
 
-    <!-- 1. 科系選擇區 -->
+    <!-- 1. 科系選擇區 (補回搜尋框) -->
     <section class="px-6 -mt-10">
         <div class="bg-white rounded-[32px] p-6 shadow-xl border border-gray-50">
             <h2 class="text-gray-800 font-bold mb-4 flex items-center text-lg">
                 <i class="fa-solid fa-graduation-cap text-indigo-500 mr-2 text-xl"></i> 你的科系是？
             </h2>
             
+            <!-- 搜尋科系輸入框 -->
             <div class="relative mb-5">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                 <input type="text" id="majorSearchInput" oninput="searchMajors()" 
@@ -44,7 +44,7 @@
             </div>
 
             <div id="majorGrid" class="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto no-scrollbar">
-                <!-- 由 JS 動態生成 -->
+                <!-- 由 JS 動態生成獨立科系方塊 -->
             </div>
 
             <button onclick="resetFilter()" class="w-full mt-5 text-xs text-indigo-500 font-bold py-4 bg-indigo-50 rounded-2xl active:bg-indigo-100 transition-all">
@@ -53,12 +53,14 @@
         </div>
     </section>
 
-    <!-- 2. 工作地點 -->
+    <!-- 2. 工作地點 (地區框格) -->
     <section class="mt-8 px-6">
         <h2 class="text-gray-800 font-bold mb-4 flex items-center text-lg">
             <i class="fa-solid fa-location-dot text-rose-500 mr-2 text-xl"></i> 工作地點
         </h2>
-        <div id="locationPills" class="flex gap-2 overflow-x-auto no-scrollbar pb-2"></div>
+        <div id="locationPills" class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+            <!-- 由 JS 動態生成 -->
+        </div>
     </section>
 
     <!-- 3. 職缺清單 -->
@@ -69,13 +71,11 @@
         </div>
         
         <div id="jobList" class="space-y-5">
-            <div class="text-center py-20">
-                <p class="text-gray-400 text-xs mt-4 font-medium">資料載入中...</p>
-            </div>
+            <div class="text-center py-20 text-gray-400">載入中...</div>
         </div>
     </section>
 
-    <!-- 底部導覽 -->
+    <!-- 底部導覽 (顏色一致化) -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-100 px-12 py-5 flex justify-around items-center z-50 shadow-lg">
         <button id="nav-home" onclick="handleNavClick('home')" class="flex flex-col items-center text-indigo-600 transition-colors">
             <i class="fa-solid fa-house-chimney text-2xl"></i>
@@ -89,7 +89,7 @@
 
     <script>
         const SHEET_ID = '1_fe8wTuSfxUX8gMFTz19V5vPX99dj79s8vewQtWjlag';
-        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx:json`;
+        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
         let allJobs = [];
         let allUniqueMajors = []; 
@@ -99,17 +99,23 @@
                 const response = await fetch(SHEET_URL);
                 const text = await response.text();
                 const jsonData = JSON.parse(text.substring(47, text.length - 2));
-                allJobs = jsonData.table.rows.map(row => {
+                const rows = jsonData.table.rows;
+                const cols = jsonData.table.cols;
+
+                allJobs = rows.map(row => {
                     let fields = {};
                     row.c.forEach((cell, i) => {
-                        const colName = jsonData.table.cols[i].label;
+                        const colName = cols[i].label;
                         if (colName) fields[colName] = cell ? cell.v : "";
                     });
                     return { fields: fields };
                 });
+                
                 initInterface();
                 renderJobs(allJobs);
-            } catch (e) { console.error(e); }
+            } catch (error) {
+                console.error("Error:", error);
+            }
         }
 
         function initInterface() {
@@ -117,20 +123,26 @@
             let locSet = new Set();
 
             allJobs.forEach(j => {
+                // 科系拆分
                 const rawDept = j.fields["科系及其他條件"];
                 if (rawDept) {
-                    const depts = rawDept.toString().split('\n')[0].split(/[、\/,，\s]+/);
-                    depts.forEach(d => { if(d.trim().length > 1) deptSet.add(d.trim()); });
+                    const firstLine = rawDept.toString().split('\n')[0].trim();
+                    firstLine.split(/[、\/,，\s]+/).forEach(d => {
+                        if(d.trim().length > 1) deptSet.add(d.trim());
+                    });
                 }
+                // 地點拆分
                 const rawLoc = j.fields["工作地點"];
                 if (rawLoc) {
-                    rawLoc.toString().split(/[、,，\s]+/).forEach(l => { if(l.trim()) locSet.add(l.trim()); });
+                    rawLoc.toString().split(/[、,，\s]+/).forEach(l => {
+                        if(l.trim()) locSet.add(l.trim());
+                    });
                 }
             });
 
             allUniqueMajors = Array.from(deptSet).sort();
             renderMajorGrid(allUniqueMajors);
-            
+
             const uniqueLocs = Array.from(locSet).sort();
             document.getElementById('locationPills').innerHTML = `
                 <button onclick="resetFilter()" class="loc-pill px-6 py-2.5 rounded-full bg-gray-900 text-white text-xs font-bold">全部</button>` + 
@@ -141,7 +153,7 @@
         function renderMajorGrid(majors) {
             const colors = ['bg-blue-50 text-blue-600', 'bg-rose-50 text-rose-600', 'bg-amber-50 text-amber-600', 'bg-emerald-50 text-emerald-600', 'bg-indigo-50 text-indigo-600'];
             document.getElementById('majorGrid').innerHTML = majors.map((d, i) => `
-                <div onclick="filterByDept('${d}')" class="major-card ${colors[i % 5]} p-3 rounded-2xl flex items-center justify-center text-center">
+                <div onclick="filterByDept('${d}')" class="major-card ${colors[i % 5]} p-3 rounded-2xl flex items-center justify-center text-center shadow-sm">
                     <span class="text-xs font-bold">${d}</span>
                 </div>`).join('');
         }
@@ -153,28 +165,21 @@
                 const f = job.fields;
                 return `
                     <div class="job-card bg-white p-6 rounded-[32px] shadow-md border border-gray-50 animate-fadeIn mb-4">
-                        <!-- 標題 -->
                         <div class="mb-2">
                             <h3 class="text-lg font-bold text-gray-800 leading-snug">${f["職務名稱"] || '職缺'}</h3>
                         </div>
-                        
-                        <!-- 公司名稱 -->
                         <div class="text-indigo-600 text-xs font-bold mb-1">
                             <i class="fa-solid fa-building mr-1"></i> ${f["公司別"] || '永豐餘集團'}
                         </div>
-
-                        <!-- 調整後的工作地點位置 -->
+                        <!-- 地點放在公司別下方 -->
                         <div class="text-gray-500 text-[11px] font-medium mb-4 flex items-center">
                             <i class="fa-solid fa-location-dot mr-1 text-rose-400"></i> ${f["工作地點"] || '全台'}
                         </div>
-
                         <div class="text-gray-400 text-[11px] mb-6 line-clamp-2 leading-relaxed">${f["職務說明"] || ''}</div>
-                        
                         <div class="bg-gray-50 p-4 rounded-2xl mb-5 text-gray-600 text-[11px] font-bold">
                             <i class="fa-solid fa-graduation-cap mr-1 text-indigo-400"></i>
                             ${(f["科系及其他條件"] || '不限').replace(/\n/g, '<br>')}
                         </div>
-                        
                         <button onclick="window.open('${f["連結"] || 'https://www.yfy.com/'}', '_blank')" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">立即申請 <i class="fa-solid fa-chevron-right ml-1"></i></button>
                     </div>`;
             }).join('');
@@ -205,11 +210,9 @@
             renderMajorGrid(allUniqueMajors.filter(m => m.toLowerCase().includes(keyword)));
         }
 
-        // --- 底部導覽變色邏輯 (改成一致的靛藍色) ---
         function handleNavClick(type) {
             const homeBtn = document.getElementById('nav-home');
             const exploreBtn = document.getElementById('nav-explore');
-
             if (type === 'home') {
                 homeBtn.classList.replace('text-gray-400', 'text-indigo-600');
                 exploreBtn.classList.replace('text-indigo-600', 'text-gray-400');

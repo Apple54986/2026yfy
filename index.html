@@ -17,6 +17,10 @@
         .gradient-bg { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
+        
+        /* 地點框格樣式 */
+        .loc-pill { transition: all 0.2s; white-space: nowrap; }
+        .loc-pill.active { background-color: #4f46e5; color: white; border-color: #4f46e5; }
     </style>
 </head>
 <body class="pb-24">
@@ -42,8 +46,7 @@
                     class="w-full bg-gray-50 border-none rounded-2xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
             </div>
 
-            <div id="majorGrid" class="grid grid-cols-2 gap-3 max-h-[350px] overflow-y-auto no-scrollbar">
-                <!-- 由 JS 動態生成獨立科系方塊 -->
+            <div id="majorGrid" class="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto no-scrollbar">
                 <div class="h-20 bg-gray-50 animate-pulse rounded-2xl"></div>
                 <div class="h-20 bg-gray-50 animate-pulse rounded-2xl"></div>
             </div>
@@ -54,12 +57,14 @@
         </div>
     </section>
 
-    <!-- 2. 地點篩選 -->
+    <!-- 2. 工作地點 (拆解後的框格) -->
     <section class="mt-8 px-6">
         <h2 class="text-gray-800 font-bold mb-4 flex items-center text-lg">
             <i class="fa-solid fa-location-dot text-rose-500 mr-2 text-xl"></i> 工作地點
         </h2>
-        <div id="locationPills" class="flex gap-2 overflow-x-auto no-scrollbar pb-2"></div>
+        <div id="locationPills" class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+            <!-- 由 JS 動態生成地區框格 -->
+        </div>
     </section>
 
     <!-- 3. 職缺清單 -->
@@ -79,11 +84,11 @@
 
     <!-- 底部導覽 -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-gray-100 px-12 py-5 flex justify-around items-center z-50 shadow-lg">
-        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="flex flex-col items-center text-indigo-600">
+        <button id="nav-home" onclick="handleNavClick('home')" class="flex flex-col items-center text-indigo-600 transition-colors">
             <i class="fa-solid fa-house-chimney text-2xl"></i>
             <span class="text-[10px] mt-1.5 font-bold">首頁</span>
         </button>
-        <button onclick="document.getElementById('listTitle').scrollIntoView({behavior: 'smooth'})" class="flex flex-col items-center text-gray-400">
+        <button id="nav-explore" onclick="handleNavClick('explore')" class="flex flex-col items-center text-gray-400 transition-colors">
             <i class="fa-solid fa-compass text-2xl"></i>
             <span class="text-[10px] mt-1.5 font-bold">探索</span>
         </button>
@@ -119,7 +124,7 @@
                 }
             } catch (error) {
                 console.error("API Error:", error);
-                document.getElementById('jobList').innerHTML = `<p class="text-center py-20 text-red-400">無法連線到資料庫</p>`;
+                document.getElementById('jobList').innerHTML = `<p class="text-center py-20 text-red-400">無法載入資料</p>`;
             }
         }
 
@@ -128,55 +133,52 @@
             let locSet = new Set();
 
             allJobs.forEach(j => {
-                const rawData = j.fields["科系及其他條件"];
-                const l = j.fields["工作地點"];
-                
-                if (rawData) {
-                    // 1. 只取第一行
-                    const firstLine = rawData.toString().split('\n')[0].trim();
-                    
-                    // 2. 根據常見分隔符號拆分成獨立科系：、 / , ， 及 空格
-                    // 正規表達式 [、\/,，\s]+ 處理多種分隔情況
-                    const individualDepts = firstLine.split(/[、\/,，\s]+/);
-                    
-                    individualDepts.forEach(dept => {
-                        const cleanDept = dept.trim();
-                        if(cleanDept && cleanDept.length > 1) { // 排除長度太短的雜訊
-                            deptSet.add(cleanDept);
-                        }
+                // 科系拆解邏輯
+                const rawDept = j.fields["科系及其他條件"];
+                if (rawDept) {
+                    const firstLine = rawDept.toString().split('\n')[0].trim();
+                    const depts = firstLine.split(/[、\/,，\s]+/);
+                    depts.forEach(d => {
+                        const clean = d.trim();
+                        if(clean.length > 1) deptSet.add(clean);
                     });
                 }
-                if (l) locSet.add(l.toString().trim());
+
+                // 工作地點拆解邏輯 (依「、」拆分)
+                const rawLoc = j.fields["工作地點"];
+                if (rawLoc) {
+                    const locs = rawLoc.toString().split(/[、,，\s]+/);
+                    locs.forEach(l => {
+                        const clean = l.trim();
+                        if(clean) locSet.add(clean);
+                    });
+                }
             });
 
-            // 轉為陣列並排序，確保顯示整齊
             allUniqueMajors = Array.from(deptSet).sort();
             const uniqueLocs = Array.from(locSet).sort();
 
             renderMajorGrid(allUniqueMajors);
-
-            // 渲染地點
-            document.getElementById('locationPills').innerHTML = `
-                <button onclick="resetFilter()" class="whitespace-nowrap px-6 py-2.5 rounded-full bg-gray-900 text-white text-xs font-bold shadow-md">全部</button>` + 
-                uniqueLocs.map(l => `
-                <button onclick="filterByLoc('${l}')" class="whitespace-nowrap px-6 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-bold shadow-sm">
-                    ${l}
-                </button>`).join('');
+            renderLocationPills(uniqueLocs);
         }
 
         function renderMajorGrid(majors) {
             const colors = ['bg-blue-50 text-blue-600', 'bg-rose-50 text-rose-600', 'bg-amber-50 text-amber-600', 'bg-emerald-50 text-emerald-600', 'bg-indigo-50 text-indigo-600', 'bg-purple-50 text-purple-600'];
             const grid = document.getElementById('majorGrid');
-            
-            if (majors.length === 0) {
-                grid.innerHTML = `<p class="col-span-2 text-center py-4 text-gray-400 text-xs">無符合的科系</p>`;
-                return;
-            }
-
             grid.innerHTML = majors.map((d, i) => `
                 <div onclick="filterByDept('${d}')" class="major-card ${colors[i % 6]} p-3 rounded-2xl flex items-center justify-center text-center shadow-sm border-0">
                     <span class="text-xs font-bold leading-tight break-words">${d}</span>
                 </div>`).join('');
+        }
+
+        function renderLocationPills(locs) {
+            const container = document.getElementById('locationPills');
+            container.innerHTML = `
+                <button onclick="resetFilter()" class="loc-pill px-6 py-2.5 rounded-full bg-gray-900 text-white text-xs font-bold shadow-md">全部</button>` + 
+                locs.map(l => `
+                <button onclick="filterByLoc('${l}')" class="loc-pill px-6 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-xs font-bold shadow-sm active:bg-indigo-50">
+                    ${l}
+                </button>`).join('');
         }
 
         function searchMajors() {
@@ -194,14 +196,11 @@
             }
             container.innerHTML = jobs.map(job => {
                 const f = job.fields;
-                const loc = f["工作地點"] || '全台';
-                const deptFull = f["科系及其他條件"] || '不限科系';
-
                 return `
                     <div class="job-card bg-white p-6 rounded-[32px] shadow-md border border-gray-50 animate-fadeIn mb-4">
                         <div class="flex justify-between items-start mb-2">
                             <h3 class="text-lg font-bold text-gray-800 leading-snug">${f["職務名稱"] || '職缺'}</h3>
-                            <span class="text-[10px] bg-gray-100 text-gray-400 px-2 py-1 rounded-lg font-black">${loc}</span>
+                            <span class="text-[10px] bg-gray-100 text-gray-400 px-2 py-1 rounded-lg font-black">${f["工作地點"] || '全台'}</span>
                         </div>
                         <div class="text-indigo-600 text-xs font-bold mb-4">
                             <i class="fa-solid fa-building mr-1"></i> ${f["公司別"] || '永豐餘集團'}
@@ -209,31 +208,26 @@
                         <div class="text-gray-400 text-[11px] mb-6 line-clamp-2 leading-relaxed">${f["職務說明"] || ''}</div>
                         <div class="bg-gray-50 p-4 rounded-2xl mb-5 text-gray-600 text-[11px] font-bold">
                             <i class="fa-solid fa-graduation-cap mr-1 text-indigo-400"></i>
-                            ${deptFull.replace(/\n/g, '<br>')}
+                            ${(f["科系及其他條件"] || '不限').replace(/\n/g, '<br>')}
                         </div>
-                        <button onclick="window.open('${f["連結"] || 'https://www.yfy.com/'}', '_blank')" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg shadow-indigo-100 active:scale-95 transition-all">立即申請 <i class="fa-solid fa-chevron-right ml-1"></i></button>
+                        <button onclick="window.open('${f["連結"] || 'https://www.104.com.tw/'}', '_blank')" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg shadow-indigo-100 active:scale-95 transition-all">立即申請 <i class="fa-solid fa-chevron-right ml-1"></i></button>
                     </div>`;
             }).join('');
         }
 
         function filterByDept(deptName) {
-            const filtered = allJobs.filter(j => {
-                const val = j.fields["科系及其他條件"];
-                // 只要該職缺的內容包含點選的獨立科系名稱即可
-                return val && val.toString().includes(deptName);
-            });
+            const filtered = allJobs.filter(j => j.fields["科系及其他條件"]?.toString().includes(deptName));
             renderJobs(filtered);
-            document.getElementById('listTitle').innerText = `搜尋：${deptName}`;
+            document.getElementById('listTitle').innerText = `科系：${deptName}`;
             document.getElementById('listTitle').scrollIntoView({behavior: 'smooth'});
+            handleNavClick('explore'); // 自動切換導覽狀態
         }
 
-        function filterByLoc(loc) {
-            const filtered = allJobs.filter(j => {
-                const val = j.fields["工作地點"];
-                return val && val.toString() === loc;
-            });
+        function filterByLoc(locName) {
+            const filtered = allJobs.filter(j => j.fields["工作地點"]?.toString().includes(locName));
             renderJobs(filtered);
-            document.getElementById('listTitle').innerText = `地點：${loc}`;
+            document.getElementById('listTitle').innerText = `地點：${locName}`;
+            handleNavClick('explore');
         }
 
         function resetFilter() {
@@ -241,6 +235,32 @@
             renderMajorGrid(allUniqueMajors);
             renderJobs(allJobs);
             document.getElementById('listTitle').innerText = "推薦職缺";
+        }
+
+        // --- 底部導覽變色邏輯 ---
+        function handleNavClick(type) {
+            const homeBtn = document.getElementById('nav-home');
+            const exploreBtn = document.getElementById('nav-explore');
+
+            if (type === 'home') {
+                // 首頁狀態 (靛色)
+                homeBtn.classList.remove('text-gray-400');
+                homeBtn.classList.add('text-indigo-600');
+                exploreBtn.classList.remove('text-purple-600');
+                exploreBtn.classList.add('text-gray-400');
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            } else {
+                // 探索狀態 (紫色)
+                exploreBtn.classList.remove('text-gray-400');
+                exploreBtn.classList.add('text-purple-600');
+                homeBtn.classList.remove('text-indigo-600');
+                homeBtn.classList.add('text-gray-400');
+                
+                // 如果點擊探索按鈕本身，則滾動到列表
+                if (event && event.currentTarget?.id === 'nav-explore') {
+                    document.getElementById('listTitle').scrollIntoView({behavior: 'smooth'});
+                }
+            }
         }
 
         fetchJobs();

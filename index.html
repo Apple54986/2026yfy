@@ -119,7 +119,7 @@
 
             allJobs.forEach(j => {
                 // 處理不重複科系 (只取第一行並拆分)
-                const rawDept = j.fields["科系及其他條件"];
+                const rawDept = j.fields["科系"];
                 if (rawDept) {
                     const firstLine = rawDept.toString().split('\n')[0].trim();
                     const depts = firstLine.split(/[、\/,，\s]+/);
@@ -175,7 +175,7 @@
                         <div class="text-gray-400 text-[11px] mb-6 line-clamp-2 leading-relaxed">${f["職務說明"] || ''}</div>
                         <div class="bg-gray-50 p-4 rounded-2xl mb-5 text-gray-600 text-[11px] font-bold">
                             <i class="fa-solid fa-graduation-cap mr-1 text-indigo-400"></i>
-                            ${(f["科系及其他條件"] || '不限').replace(/\n/g, '<br>')}
+                            ${(f["科系"] || '不限').replace(/\n/g, '<br>')}
                         </div>
                         <button onclick="window.open('${f["連結"] || 'https://www.104.com.tw/'}', '_blank')" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">立即申請 <i class="fa-solid fa-chevron-right ml-1"></i></button>
                     </div>`;
@@ -183,7 +183,7 @@
         }
 
         function filterByDept(deptName) {
-            renderJobs(allJobs.filter(j => j.fields["科系及其他條件"]?.toString().includes(deptName)));
+            renderJobs(allJobs.filter(j => j.fields["科系"]?.toString().includes(deptName)));
             document.getElementById('listTitle').innerText = `搜尋：${deptName}`;
             handleNavClick('explore');
             document.getElementById('listTitle').scrollIntoView({behavior: 'smooth'});

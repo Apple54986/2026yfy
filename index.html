@@ -9,7 +9,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
         body { background-color: #f8fafc; font-family: 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .major-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; cursor: pointer; min-height: 80px; }
+        .major-card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #f1f5f9; cursor: pointer; min-height: 70px; }
         .major-card:active { transform: scale(0.95); background-color: #f8fafc; }
         .job-card { border-left: 6px solid #6366f1; transition: transform 0.2s; }
         .job-card:active { transform: translateY(2px); }
@@ -34,22 +34,22 @@
                 <i class="fa-solid fa-graduation-cap text-indigo-500 mr-2 text-xl"></i> 你的科系是？
             </h2>
             
-            <!-- 新增：搜尋科系關鍵字 -->
+            <!-- 搜尋科系關鍵字 -->
             <div class="relative mb-5">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                 <input type="text" id="majorSearchInput" oninput="searchMajors()" 
-                    placeholder="搜尋科系關鍵字..." 
+                    placeholder="搜尋科系關鍵字 (如：機械、化學)..." 
                     class="w-full bg-gray-50 border-none rounded-2xl py-3 pl-11 pr-4 text-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none">
             </div>
 
-            <div id="majorGrid" class="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto no-scrollbar">
-                <!-- 由 JS 動態生成 -->
+            <div id="majorGrid" class="grid grid-cols-2 gap-3 max-h-[350px] overflow-y-auto no-scrollbar">
+                <!-- 由 JS 動態生成獨立科系方塊 -->
                 <div class="h-20 bg-gray-50 animate-pulse rounded-2xl"></div>
                 <div class="h-20 bg-gray-50 animate-pulse rounded-2xl"></div>
             </div>
 
             <button onclick="resetFilter()" class="w-full mt-5 text-xs text-indigo-500 font-bold py-4 bg-indigo-50 rounded-2xl active:bg-indigo-100 transition-all">
-                重置並顯示所有職缺
+                顯示所有職缺
             </button>
         </div>
     </section>
@@ -72,7 +72,7 @@
         <div id="jobList" class="space-y-5">
             <div class="text-center py-20">
                 <div class="inline-block animate-spin rounded-full h-10 w-10 border-[4px] border-indigo-500 border-t-transparent"></div>
-                <p class="text-gray-400 text-xs mt-4 font-medium">載入中...</p>
+                <p class="text-gray-400 text-xs mt-4 font-medium">資料整理中...</p>
             </div>
         </div>
     </section>
@@ -94,7 +94,7 @@
         const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json`;
 
         let allJobs = [];
-        let allUniqueMajors = []; // 存儲所有的科系(第一行)
+        let allUniqueMajors = []; 
 
         async function fetchJobs() {
             try {
@@ -119,7 +119,7 @@
                 }
             } catch (error) {
                 console.error("API Error:", error);
-                document.getElementById('jobList').innerHTML = `<p class="text-center py-20 text-red-400">讀取資料失敗</p>`;
+                document.getElementById('jobList').innerHTML = `<p class="text-center py-20 text-red-400">無法連線到資料庫</p>`;
             }
         }
 
@@ -128,21 +128,31 @@
             let locSet = new Set();
 
             allJobs.forEach(j => {
-                const rawDept = j.fields["科系及其他條件"];
+                const rawData = j.fields["科系及其他條件"];
                 const l = j.fields["工作地點"];
                 
-                if (rawDept) {
-                    // 只取第一行，並完整列出
-                    const firstLine = rawDept.toString().split('\n')[0].trim();
-                    if(firstLine) deptSet.add(firstLine);
+                if (rawData) {
+                    // 1. 只取第一行
+                    const firstLine = rawData.toString().split('\n')[0].trim();
+                    
+                    // 2. 根據常見分隔符號拆分成獨立科系：、 / , ， 及 空格
+                    // 正規表達式 [、\/,，\s]+ 處理多種分隔情況
+                    const individualDepts = firstLine.split(/[、\/,，\s]+/);
+                    
+                    individualDepts.forEach(dept => {
+                        const cleanDept = dept.trim();
+                        if(cleanDept && cleanDept.length > 1) { // 排除長度太短的雜訊
+                            deptSet.add(cleanDept);
+                        }
+                    });
                 }
                 if (l) locSet.add(l.toString().trim());
             });
 
-            allUniqueMajors = Array.from(deptSet);
-            const uniqueLocs = Array.from(locSet);
+            // 轉為陣列並排序，確保顯示整齊
+            allUniqueMajors = Array.from(deptSet).sort();
+            const uniqueLocs = Array.from(locSet).sort();
 
-            // 初始渲染科系方塊
             renderMajorGrid(allUniqueMajors);
 
             // 渲染地點
@@ -154,23 +164,21 @@
                 </button>`).join('');
         }
 
-        // 渲染科系方塊
         function renderMajorGrid(majors) {
             const colors = ['bg-blue-50 text-blue-600', 'bg-rose-50 text-rose-600', 'bg-amber-50 text-amber-600', 'bg-emerald-50 text-emerald-600', 'bg-indigo-50 text-indigo-600', 'bg-purple-50 text-purple-600'];
-            
             const grid = document.getElementById('majorGrid');
+            
             if (majors.length === 0) {
-                grid.innerHTML = `<p class="col-span-2 text-center py-4 text-gray-400 text-xs">找不到相關科系</p>`;
+                grid.innerHTML = `<p class="col-span-2 text-center py-4 text-gray-400 text-xs">無符合的科系</p>`;
                 return;
             }
 
             grid.innerHTML = majors.map((d, i) => `
-                <div onclick="filterByDept('${d}')" class="major-card ${colors[i % 6]} p-4 rounded-3xl flex items-center justify-center text-center shadow-sm border-0">
-                    <span class="text-xs font-bold leading-tight break-words w-full">${d}</span>
+                <div onclick="filterByDept('${d}')" class="major-card ${colors[i % 6]} p-3 rounded-2xl flex items-center justify-center text-center shadow-sm border-0">
+                    <span class="text-xs font-bold leading-tight break-words">${d}</span>
                 </div>`).join('');
         }
 
-        // 搜尋科系功能
         function searchMajors() {
             const keyword = document.getElementById('majorSearchInput').value.toLowerCase();
             const filteredMajors = allUniqueMajors.filter(m => m.toLowerCase().includes(keyword));
@@ -181,13 +189,12 @@
             document.getElementById('jobCount').innerText = jobs.length;
             const container = document.getElementById('jobList');
             if (jobs.length === 0) {
-                container.innerHTML = `<div class="text-center py-20 text-gray-400 font-medium">目前無相符職缺</div>`;
+                container.innerHTML = `<div class="text-center py-20 text-gray-400 font-medium">找不到符合條件的職缺</div>`;
                 return;
             }
             container.innerHTML = jobs.map(job => {
                 const f = job.fields;
                 const loc = f["工作地點"] || '全台';
-                // 列表內可自由決定是否顯示全文，這裡維持顯示全文以方便學生查看詳細條件
                 const deptFull = f["科系及其他條件"] || '不限科系';
 
                 return `
@@ -212,8 +219,8 @@
         function filterByDept(deptName) {
             const filtered = allJobs.filter(j => {
                 const val = j.fields["科系及其他條件"];
-                // 只要該職缺的第一行符合選中的科系
-                return val && val.toString().split('\n')[0].trim() === deptName;
+                // 只要該職缺的內容包含點選的獨立科系名稱即可
+                return val && val.toString().includes(deptName);
             });
             renderJobs(filtered);
             document.getElementById('listTitle').innerText = `搜尋：${deptName}`;

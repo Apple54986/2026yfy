@@ -100,7 +100,6 @@
         let allJobs = [];
         const targetCategories = ["循環經濟", "數位轉型", "能源工務", "運營管理"];
 
-        // 模糊匹配欄位
         function getValueByKeyword(fields, keyword) {
             const key = Object.keys(fields).find(k => k.includes(keyword));
             return key ? fields[key] : "";
@@ -172,7 +171,7 @@
             // 清除所有高亮
             document.querySelectorAll('.cat-card').forEach(item => item.classList.remove('active-filter'));
 
-            // 高亮當前點擊類別（螢光發亮）
+            // 高亮當前點擊類別
             el.classList.add('active-filter');
 
             // 過濾職缺
@@ -182,7 +181,9 @@
             });
 
             renderJobs(matchingJobs);
-            document.getElementById('listTitle').innerText = `類別：${catName}`;
+            
+            // 修正處：將標題改回固定的「推薦職缺」，不再顯示類別名稱
+            document.getElementById('listTitle').innerText = "推薦職缺";
             document.getElementById('listTitle').scrollIntoView({behavior: 'smooth'});
         }
 

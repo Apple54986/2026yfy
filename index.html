@@ -42,19 +42,20 @@
         .job-card { border-left: 6px solid #6366f1; transition: transform 0.2s; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
 
-        /* --- 頂部圖片 Header 調整 --- */
+        /* --- 頂部 Header 樣式調整 --- */
         .gradient-bg { 
+            /* 已去除 linear-gradient 遮罩，僅保留背景圖 */
             background-image: url('arrow5.jpg'); 
             background-size: contain;    
             background-position: center; 
             background-repeat: no-repeat;
             background-color: #f8f0f4;   
-            height: 220px;               
-            /* 加入 Flex 佈局讓文字能排在底部 */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
+            min-height: 220px;
+        }
+
+        /* 設定自定義文字顏色 #ec227b */
+        .header-custom-text {
+            color: #ec227b;
         }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -63,12 +64,10 @@
 </head>
 <body class="pb-24">
 
-    <!-- 頂部 Header (圖片區 + 新增文字) -->
-    <div class="gradient-bg rounded-b-[50px] shadow-lg pb-6">
-        <!-- 這裡是新增的文字，使用了半透明背景確保在任何背景圖下都清晰 -->
-        <p class="text-indigo-900 font-bold text-sm bg-white/40 backdrop-blur-md px-5 py-1.5 rounded-full shadow-sm animate-fadeIn">
-            在永豐餘找到最適合你的職缺
-        </p>
+    <!-- 頂部 Header (文字顏色已改為 #ec227b 並去除遮罩) -->
+    <div class="gradient-bg header-custom-text px-8 py-14 rounded-b-[50px] shadow-2xl text-center">
+        <h1 class="text-3xl font-extrabold tracking-tight">哈囉🌼</h1>
+        <p class="opacity-90 text-sm mt-3 font-medium">在永豐餘找到最適合你的職缺</p>
     </div>
 
     <!-- 1. 職缺類別 (主篩選區) -->

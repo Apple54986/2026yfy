@@ -41,7 +41,17 @@
 
         .job-card { border-left: 6px solid #6366f1; transition: transform 0.2s; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .gradient-bg { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
+
+        /* --- 頂部圖片 Header 調整 --- */
+        .gradient-bg { 
+            /* 將下方 url 換成你的圖片網址 */
+            background-image: url('arrow.jpg'); 
+            background-size: contain;    /* 確保 FUTURE/CURRENT 文字不會被切掉 */
+            background-position: center; /* 圖片置中 */
+            background-repeat: no-repeat;
+            background-color: #ffffff;   /* 圖片背景是白色，所以設定底色為白色 */
+            height: 220px;               /* 設定固定高度以適應圖片比例 */
+        }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fadeIn { animation: fadeIn 0.4s ease-out forwards; }
@@ -49,10 +59,9 @@
 </head>
 <body class="pb-24">
 
-    <!-- 頂部 Header -->
-    <div class="gradient-bg text-white px-8 py-14 rounded-b-[50px] shadow-2xl text-center">
-        <h1 class="text-3xl font-extrabold tracking-tight">哈囉🌼</h1>
-        <p class="opacity-90 text-sm mt-3 font-medium">在永豐餘找到最適合你的職缺</p>
+    <!-- 頂部 Header (圖片區) -->
+    <div class="gradient-bg rounded-b-[50px] shadow-lg">
+        <!-- 原本的「哈囉🌼」文字已移除，以保持圖片美觀 -->
     </div>
 
     <!-- 1. 職缺類別 (主篩選區) -->
@@ -159,30 +168,21 @@
                         <div class="text-gray-400 text-[11px] mb-6 leading-relaxed whitespace-pre-line">${getValueByKeyword(f, "說明")}</div>
                         <div class="bg-gray-50 p-4 rounded-2xl mb-5 text-gray-600 text-[11px] font-bold">
                             <i class="fa-solid fa-graduation-cap mr-1 text-indigo-400"></i>
-                            ${getValueByKeyword(f, "科系").toString().replace(/\n/g, '<br>')}
+                            ${(getValueByKeyword(f, "科系")).toString().replace(/\n/g, '<br>')}
                         </div>
                         <button onclick="window.open('${applyLink}', '_blank')" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">立即投遞 <i class="fa-solid fa-chevron-right ml-1"></i></button>
                     </div>`;
             }).join('');
         }
 
-        // --- 篩選邏輯 ---
         function handleCatSelection(catName, el) {
-            // 清除所有高亮
             document.querySelectorAll('.cat-card').forEach(item => item.classList.remove('active-filter'));
-
-            // 高亮當前點擊類別
             el.classList.add('active-filter');
-
-            // 過濾職缺
             const matchingJobs = allJobs.filter(j => {
                 const val = getValueByKeyword(j.fields, "類別");
                 return val && val.toString().includes(catName);
             });
-
             renderJobs(matchingJobs);
-            
-            // 修正處：將標題改回固定的「推薦職缺」，不再顯示類別名稱
             document.getElementById('listTitle').innerText = "推薦職缺";
             document.getElementById('listTitle').scrollIntoView({behavior: 'smooth'});
         }

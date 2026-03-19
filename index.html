@@ -44,13 +44,15 @@
 
         /* --- 頂部 Header 樣式調整 --- */
         .gradient-bg { 
-            /* 已去除 linear-gradient 遮罩，僅保留背景圖 */
             background-image: url('arrow5.jpg'); 
             background-size: contain;    
             background-position: center; 
             background-repeat: no-repeat;
             background-color: #f8f0f4;   
-            min-height: 220px;
+            height: 220px; /* 固定高度 */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* 讓內容靠底部排列 */
         }
 
         /* 設定自定義文字顏色 #ec227b */
@@ -64,10 +66,10 @@
 </head>
 <body class="pb-24">
 
-    <!-- 頂部 Header (文字顏色已改為 #ec227b 並去除遮罩) -->
-    <div class="gradient-bg header-custom-text px-8 py-14 rounded-b-[50px] shadow-2xl text-center">
-        <h1 class="text-3xl font-extrabold tracking-tight">哈囉🌼</h1>
-        <p class="opacity-90 text-sm mt-3 font-medium">在永豐餘找到最適合你的職缺</p>
+    <!-- 頂部 Header (已刪除「哈囉」，文字已下移) -->
+    <div class="gradient-bg header-custom-text px-8 pb-10 rounded-b-[50px] shadow-2xl text-center">
+        <!-- 僅保留副標題，並透過 pb-10 控制其離底部的距離 -->
+        <p class="opacity-90 text-sm font-bold animate-fadeIn">在永豐餘找到最適合你的職缺</p>
     </div>
 
     <!-- 1. 職缺類別 (主篩選區) -->
@@ -174,7 +176,7 @@
                         <div class="text-gray-400 text-[11px] mb-6 leading-relaxed whitespace-pre-line">${getValueByKeyword(f, "說明")}</div>
                         <div class="bg-gray-50 p-4 rounded-2xl mb-5 text-gray-600 text-[11px] font-bold">
                             <i class="fa-solid fa-graduation-cap mr-1 text-indigo-400"></i>
-                            ${(getValueByKeyword(f, "科系")).toString().replace(/\n/g, '<br>')}
+                            ${(getValueByKeyword(f, "科系") || "不限").toString().replace(/\n/g, '<br>')}
                         </div>
                         <button onclick="window.open('${applyLink}', '_blank')" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 transition-all">立即投遞 <i class="fa-solid fa-chevron-right ml-1"></i></button>
                     </div>`;

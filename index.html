@@ -66,9 +66,8 @@
 </head>
 <body class="pb-24">
 
-    <!-- 頂部 Header (已刪除「哈囉」，文字已下移) -->
+    <!-- 頂部 Header -->
     <div class="gradient-bg header-custom-text px-8 pb-11 rounded-b-[50px] shadow-2xl text-center">
-        <!-- 僅保留副標題，並透過 pb-10 控制其離底部的距離 -->
         <p class="opacity-90 text-sm font-bold animate-fadeIn">在永豐餘找到最適合你的職缺🌼</p>
     </div>
 
@@ -79,7 +78,7 @@
                 <i class="fa-solid fa-tags text-amber-500 mr-2 text-xl"></i> 請選擇感興趣的類別
             </h2>
             <div id="categoryGrid" class="grid grid-cols-2 gap-4">
-                <!-- 由 JS 生成固定四個類別 -->
+                <!-- 由 JS 生成特定顏色的四個類別 -->
             </div>
             <button onclick="resetFilter()" class="w-full mt-6 text-xs text-indigo-500 font-bold py-4 bg-indigo-50 rounded-2xl active:bg-indigo-100 transition-all">
                 顯示全部職缺
@@ -117,6 +116,14 @@
         let allJobs = [];
         const targetCategories = ["循環經濟人才", "數位轉型人才", "能源工務人才", "運營管理人才"];
 
+        // 定義每一種人才的顏色樣式
+        const categoryStyles = {
+            "循環經濟人才": { bg: "#b2ddd1", text: "#064e3b" }, // 背景色, 深綠色字
+            "數位轉型人才": { bg: "#fedcae", text: "#451a03" }, // 背景色, 深咖色字
+            "能源工務人才": { bg: "#bbe5f9", text: "#1e3a8a" }, // 背景色, 深藍色字
+            "運營管理人才": { bg: "#f7c4df", text: "#4a044e" }  // 背景色, 深粉色字
+        };
+
         function getValueByKeyword(fields, keyword) {
             const key = Object.keys(fields).find(k => k.includes(keyword));
             return key ? fields[key] : "";
@@ -146,16 +153,15 @@
         }
 
         function renderCategoryGrid(categories) {
-            const colors = [
-                'bg-indigo-50 text-indigo-700', 
-                'bg-emerald-50 text-emerald-700', 
-                'bg-rose-50 text-rose-700', 
-                'bg-amber-50 text-amber-700'
-            ];
-            document.getElementById('categoryGrid').innerHTML = categories.map((c, i) => `
-                <div data-cat="${c}" onclick="handleCatSelection('${c}', this)" class="cat-card ${colors[i % 4]} shadow-sm">
+            document.getElementById('categoryGrid').innerHTML = categories.map(c => {
+                const style = categoryStyles[c] || { bg: "#ffffff", text: "#000000" };
+                return `
+                <div data-cat="${c}" onclick="handleCatSelection('${c}', this)" 
+                     class="cat-card shadow-sm" 
+                     style="background-color: ${style.bg}; color: ${style.text};">
                     <span>${c}</span>
-                </div>`).join('');
+                </div>`;
+            }).join('');
         }
 
         function renderJobs(jobs) {

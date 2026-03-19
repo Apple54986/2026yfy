@@ -44,13 +44,17 @@
 
         /* --- 頂部圖片 Header 調整 --- */
         .gradient-bg { 
-            /* 將下方 url 換成你的圖片網址 */
             background-image: url('arrow5.jpg'); 
-            background-size: contain;    /* 確保 FUTURE/CURRENT 文字不會被切掉 */
-            background-position: center; /* 圖片置中 */
+            background-size: contain;    
+            background-position: center; 
             background-repeat: no-repeat;
-            background-color: #f8f0f4;   /* 圖片背景是白色，所以設定底色為白色 */
-            height: 220px;               /* 設定固定高度以適應圖片比例 */
+            background-color: #f8f0f4;   
+            height: 220px;               
+            /* 加入 Flex 佈局讓文字能排在底部 */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
         }
         
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -59,9 +63,12 @@
 </head>
 <body class="pb-24">
 
-    <!-- 頂部 Header (圖片區) -->
-    <div class="gradient-bg rounded-b-[50px] shadow-lg">
-        <!-- 原本的「哈囉🌼」文字已移除，以保持圖片美觀 -->
+    <!-- 頂部 Header (圖片區 + 新增文字) -->
+    <div class="gradient-bg rounded-b-[50px] shadow-lg pb-6">
+        <!-- 這裡是新增的文字，使用了半透明背景確保在任何背景圖下都清晰 -->
+        <p class="text-indigo-900 font-bold text-sm bg-white/40 backdrop-blur-md px-5 py-1.5 rounded-full shadow-sm animate-fadeIn">
+            在永豐餘找到最適合你的職缺
+        </p>
     </div>
 
     <!-- 1. 職缺類別 (主篩選區) -->
